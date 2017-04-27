@@ -1,5 +1,5 @@
 /**
- * Created by valen on 30/03/2017.
+ * Created by ValLabY on 30/03/2017.
  */
 
 const canvas = document.createElement('canvas');
@@ -12,13 +12,15 @@ const ctx = canvas.getContext('2d');
 
 
 var imgSpaceship= new Image();
-imgSpaceship.src = 'sprite.png';
-var imgMissile= new Image();
-imgMissile.src = 'sprite_missile.png';
+imgSpaceship.src = 'images/sprite.png';
+var imgMissileSpaceship= new Image();
+imgMissileSpaceship.src = 'images/sprite_missile.png';
+var imgMissileSpaceMonster= new Image();
+imgMissileSpaceMonster.src = 'images/sprite_missile_monster.png';
 var imgSpaceMonster = new Image();
-imgSpaceMonster.src = 'sprite_alien.png';
+imgSpaceMonster.src = 'images/sprite_alien.png';
 var imgExplosion = new Image();
-imgExplosion.src = 'sprite_explosion.png';
+imgExplosion.src = 'images/sprite_explosion.png';
 
 
 /* spaceship */
@@ -26,12 +28,15 @@ imgExplosion.src = 'sprite_explosion.png';
 var spaceship = {
     x: 0,
     y: 450,
-    spriteIndex: 94,
+    sprite: imgSpaceship,
+    spriteIndexX: 94,
+    spriteIndexY: 0,
     dir: 1,
-    pv: 50,
+    pv: 100,
     touch: false,
     spriteCounter: 0,
     shootCounter: 0,
+    spriteCounterDeath: 0,
     xSpeed: 8,
     keyswitch: false,
     inertie: 8,
@@ -40,7 +45,7 @@ var spaceship = {
         ctx.beginPath();
         ctx.strokeStyle="white";
         ctx.lineWidth="2";
-        ctx.rect(10,10,this.pv*5,20);
+        ctx.rect(10,10,this.pv*3,20);
         ctx.fillStyle="green";
         ctx.fill();
         ctx.stroke();
@@ -48,7 +53,7 @@ var spaceship = {
     shoot: function () {
 
         if(this.shootSwitch == true && this.shootCounter == 0){
-           missile(this.x + 23.5,this.y);
+           missile(this.x + 23.5,this.y,15,imgMissileSpaceship);
             this.shootCounter = 10;
         }
         this.shootCounter--;
@@ -58,7 +63,7 @@ var spaceship = {
         }
     },
     move: function () {
-        if ( this.keyswitch == true ){
+        if ( this.keyswitch == true && this.pv > 0){
             this.inertie--;
             this.x = this.x + (this.xSpeed - this.inertie) *this.dir;
             if( this.inertie <=0){
@@ -72,22 +77,22 @@ var spaceship = {
     },
     spriteAnim: function () {
 
-        if (this.keyswitch == false) {
-            this.spriteIndex = 94;
+        if (this.keyswitch == false && this.pv > 0) {
+            this.spriteIndexX = 94;
             this.spriteCounter = 0;
         }
-        else if ( this.keyswitch == true ) {
+        else if ( this.keyswitch == true && this.pv > 0) {
             this.spriteCounter++;
             if (this.keyswitch == true && this.dir == -1 && this.spriteCounter == 5) {
-                    this.spriteIndex -= 47;
-                if (this.spriteIndex<= 0){
-                    this.spriteIndex = 0;
+                    this.spriteIndexX -= 47;
+                if (this.spriteIndexX<= 0){
+                    this.spriteIndexX = 0;
                 }
                 this.spriteCounter = 0;
             } else if (this.keyswitch == true && this.dir == 1 && this.spriteCounter == 5) {
-                    this.spriteIndex += 47;
-                    if (this.spriteIndex>= 188){
-                        this.spriteIndex = 188;
+                    this.spriteIndexX += 47;
+                    if (this.spriteIndexX>= 188){
+                        this.spriteIndexX = 188;
                     }
 
                 this.spriteCounter = 0;
@@ -98,8 +103,8 @@ var spaceship = {
     degats: function () {
         if( this.touch == true){
             this.pv -= 10;
+            this.touch = false;
         }
-
         if (this.pv < 0 ){
             this.pv = 0;
         }
@@ -109,14 +114,33 @@ var spaceship = {
             ctx.fillText("Vous etes Mort", 50, 150);
         }
     },
+    spriteAnimDeath: function () {
+
+        if (this.pv == 0) {
+            if(this.spriteIndexX%5){
+                this.spriteIndexX = 0;
+            }
+            this.sprite = imgExplosion;
+            this.spriteCounterDeath++;
+            if (this.spriteCounterDeath == 4 ) {
+                this.spriteIndexX += 50;
+                if (this.spriteIndexX > 150) {
+                    this.spriteIndexY += 50;
+                    this.spriteIndexX = 0;
+                }
+
+                this.spriteCounterDeath = 0;
+            }
+        }
+    },
     update: function () {
 
         this.move();
         this.shoot();
         this.degats();
         this.spriteAnim();
-
-        ctx.drawImage(imgSpaceship,this.spriteIndex,0,47,48,this.x, this.y,50,48);
+        this.spriteAnimDeath();
+        ctx.drawImage(this.sprite,this.spriteIndexX,this.spriteIndexY,47,48,this.x, this.y,50,48);
 
         this.pvSprite();
 
@@ -127,16 +151,16 @@ var spaceship = {
 
 /* missile */
 
-var missile = function (_x,_y) {
+var missile = function (_x,_y,_ySpeed,_imgMissile) {
 
     const _missile = {
         id: this.id+1,
         x: _x,
         y: _y,
-        ySpeed: 11,
+        ySpeed: _ySpeed,
         update: function () {
             this.y -= this.ySpeed;
-            ctx.drawImage(imgMissile,this.x, this.y, 8, 28);
+            ctx.drawImage(_imgMissile,this.x, this.y, 8, 28);
         }
     };
 missiles.push(_missile);
@@ -160,6 +184,18 @@ var spacemonster = function (_x,_y,_id) {
         spriteIndexX: 0,
         spriteIndexY: 0,
         spriteCounter: 0,
+        shootCounter: Math.floor((Math.random() * 400) + 5 ),
+        shoot: function () {
+            if( this.shootCounter == 0){
+                missile(this.x + 25,this.y + 50,-7,imgMissileSpaceMonster);
+                this.shootCounter = Math.floor((Math.random() * 400) + 5 );
+            }
+            this.shootCounter--;
+
+            if (this.shootCounter < 0 ){
+                this.shootCounter = 0;
+            }
+        },
         spriteAnim: function () {
             if (this.kill == true) {
                 this.sprite = imgExplosion;
@@ -183,6 +219,7 @@ var spacemonster = function (_x,_y,_id) {
         },
 
         update: function () {
+            this.shoot();
             this.spriteAnim();
             ctx.drawImage(this.sprite,this.spriteIndexX,this.spriteIndexY,50,50,this.x, this.y,50,50);
         }
@@ -221,7 +258,7 @@ const stars =[];
 function collision(){
     for(var monster in spacemonsters){
         for( var missile in missiles) {
-            if( missiles[missile].y< spacemonsters[monster].y + 50 && spacemonsters[monster].x + 50 > missiles[missile].x && missiles[missile].x> spacemonsters[monster].x){
+            if( missiles[missile].y< spacemonsters[monster].y + 50 && spacemonsters[monster].x + 50 > missiles[missile].x && missiles[missile].x> spacemonsters[monster].x && missiles[missile].ySpeed >0){
 
                 spacemonsters[monster].kill = true;
                 missiles.splice(missile, 1);
@@ -232,6 +269,13 @@ function collision(){
         if (spacemonsters[monster].spriteIndexY >= 100) {
             spacemonsters.splice(monster, 1);
 
+        }
+    }
+
+    for( var missileMonster in missiles ){
+        if(missiles[missileMonster].y + 28 > spaceship.y && missiles[missileMonster].y + 28 < spaceship.y + 48 &&  missiles[missileMonster].x > spaceship.x && missiles[missileMonster].x + 8 < spaceship.x+47 && missiles[missileMonster].ySpeed <0){
+            spaceship.touch = true;
+            missiles.splice(missileMonster,1);
         }
     }
 }
@@ -248,7 +292,7 @@ function killStar(){
 
 function killMissile(){
     for( var missile in missiles){
-        if ( missiles[missile].y < 0) {
+        if ( missiles[missile].y < 0 || missiles[missile].y > 500) {
             missiles.splice(missile, 1);
         }
     }
@@ -261,7 +305,7 @@ function create(){
     var t = 0;
     for(i= 25; i<= 500; i += 100){
         spacemonster(i, 100,t);
-        spacemonster(i+50, 150,t + 4);
+        spacemonster(i, 150,t + 4);
 
         t++;
     }
