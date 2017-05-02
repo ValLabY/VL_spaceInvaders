@@ -10,7 +10,6 @@ document.body.appendChild(canvas);
 
 const ctx = canvas.getContext('2d');
 
-
 var imgSpaceship= new Image();
 imgSpaceship.src = 'images/sprite.png';
 var imgMissileSpaceship= new Image();
@@ -21,6 +20,30 @@ var imgSpaceMonster = new Image();
 imgSpaceMonster.src = 'images/sprite_alien.png';
 var imgExplosion = new Image();
 imgExplosion.src = 'images/sprite_explosion.png';
+
+var laserSound = new Howl({
+    src: [' son/laser.mp3']
+});
+
+var laserSoundMonster= new Howl({
+    src: [' son/Laser_Shoot6.wav']
+});
+
+var explosionSound = new Howl({
+    src: [' son/explosion.wav']
+});
+
+var music= new Howl({
+    src: [' son/H-Mister-Willpower.mp3']
+});
+
+var hit= new Howl({
+    src: [' son/Hit_Hurt2.wav']
+});
+
+var noMusic = false;
+var noSound = false;
+
 
 
 /* spaceship */
@@ -52,8 +75,20 @@ var spaceship = {
     },
     shoot: function () {
 
-        if(this.shootSwitch == true && this.shootCounter == 0){
-           missile(this.x + 23.5,this.y,15,imgMissileSpaceship);
+
+        if(this.shootSwitch == true && this.shootCounter == 0 && this.pv > 0){
+
+
+
+            if ( noSound == false) {
+                laserSound.play();
+            }
+            if ( noSound == true) {
+                laserSound.stop();
+            }
+
+
+            missile(this.x + 23.5,this.y,15,imgMissileSpaceship);
             this.shootCounter = 10;
         }
         this.shootCounter--;
@@ -109,9 +144,10 @@ var spaceship = {
             this.pv = 0;
         }
         if(this.pv == 0){
-            ctx.font = "50pt Calibri,Geneva,Arial";
+
+            ctx.font = "20pt Pixeled";
             ctx.fillStyle = "white";
-            ctx.fillText("Vous etes Mort", 50, 150);
+            ctx.fillText("Vous etes Mort", 75, 250);
         }
     },
     spriteAnimDeath: function () {
@@ -187,6 +223,12 @@ var spacemonster = function (_x,_y,_id) {
         shootCounter: Math.floor((Math.random() * 400) + 5 ),
         shoot: function () {
             if( this.shootCounter == 0){
+                if ( noSound == false) {
+                    laserSoundMonster.play();
+                }
+                if ( noSound == true) {
+                    laserSoundMonster.stop();
+                }
                 missile(this.x + 25,this.y + 50,-7,imgMissileSpaceMonster);
                 this.shootCounter = Math.floor((Math.random() * 400) + 5 );
             }
@@ -253,6 +295,46 @@ var star = function ( _width, _width2, _speed) {
 
 const stars =[];
 
+
+/* Score */
+
+var score = {
+    point: 0,
+    ySpeed: 3,
+    update: function () {
+        ctx.font = "10pt Pixeled";
+        ctx.fillStyle = "white";
+        ctx.fillText("Score : " + this.point , 25, 60);
+    }
+};
+
+var animScore = function (_x,_y) {
+    const _animScore = {
+        x : _x,
+        y: _y,
+        ySpeed: 1,
+        animCounter: 50,
+        anim: function () {
+            if (this.animCounter > 0){
+            this.y = this.y - this.ySpeed
+            }
+            this.animCounter --;
+            if( this.animCounter <= 0 ){
+                this.animCounter = 0;
+                animscores.splice(0,1);
+            }
+        },
+        update: function () {
+            this.anim();
+            ctx.font = "5pt Pixeled";
+            ctx.fillStyle = "white";
+            ctx.fillText("+10pts" , this.x, this.y);
+        }
+    }
+    animscores.push(_animScore);
+};
+
+const animscores = [];
 /* collision */
 
 function collision(){
@@ -263,17 +345,29 @@ function collision(){
                 spacemonsters[monster].kill = true;
                 missiles.splice(missile, 1);
 
+
+                if ( noSound == false) {
+                    explosionSound.play();
+                }
+                if ( noSound == true) {
+                    explosionSound.stop();
+                }
             }
 
         }
         if (spacemonsters[monster].spriteIndexY >= 100) {
-            spacemonsters.splice(monster, 1);
 
+            animScore( spacemonsters[monster].x, spacemonsters[monster].y);
+            spacemonsters.splice(monster, 1);
+            score.point += 10;
         }
     }
 
     for( var missileMonster in missiles ){
         if(missiles[missileMonster].y + 28 > spaceship.y && missiles[missileMonster].y + 28 < spaceship.y + 48 &&  missiles[missileMonster].x > spaceship.x && missiles[missileMonster].x + 8 < spaceship.x+47 && missiles[missileMonster].ySpeed <0){
+            if ( noSound != true) {
+                hit.play();
+            }
             spaceship.touch = true;
             missiles.splice(missileMonster,1);
         }
@@ -299,8 +393,13 @@ function killMissile(){
 }
 
 /* main */
-
+var play = true;
+var musicIsOn = true;
 function create(){
+
+
+
+
     update();
     var t = 0;
     for(i= 25; i<= 500; i += 100){
@@ -310,18 +409,29 @@ function create(){
         t++;
     }
 
-
-
+    if(noMusic == false){
+        music.play();
+        musicIsOn = true;
+    }
 }
 
 function update(){
     var date = new Date();
     console.log(date.toLocaleTimeString());
     setTimeout(update, 16);
+    if (musicIsOn == false){
+        musicIsOn = true;
+        music.play();
+    }
+    if (noMusic == true){
+        musicIsOn = false;
+        music.stop();
+
+    }
+
     ctx.clearRect(0, 0, 500, 500);
     ctx.fillStyle="#070048";
     ctx.fillRect(0,0,500,500);
-    collision();
     star(1,2, 2);
     star(1,2, 3);
     star(1,2,6);
@@ -329,19 +439,54 @@ function update(){
     stars.map(function (_star) {
         _star.update();
     });
+    if( play == true) {
+        collision();
+        score.update();
+        spacemonsters.map(function (_spacemonster) {
+            _spacemonster.update();
+        });
+        spaceship.update();
+
+        missiles.map(function (_missile) {
+            _missile.update();
+        });
+
+        animscores.map(function (_score) {
+            _score.update();
+        });
+
+        killMissile();
+
+    }
+    if(play == false && score.point < 100){
+        ctx.font = "20pt Pixeled";
+        ctx.fillStyle = "white";
+        ctx.fillText("Le jeu est en pause", 25, 150);
+        ctx.font = "10pt Pixeled";
+        ctx.fillStyle = "white";
+        ctx.fillText("Appuyez sur P pour relancer", 25, 200);
+    }
+
+    if( score.point == 100){
+        ctx.font = "30pt Pixeled";
+        ctx.fillStyle = "white";
+        ctx.fillText("Victoire !", 100, 150);
+    }
+
+    if(document.getElementById("sound").checked == true){
+        noSound = true;
+    } else if(document.getElementById("sound").checked == false){
+        noSound = false;
+    }
 
 
-    spacemonsters.map(function (_spacemonster) {
-        _spacemonster.update();
-    });
-    spaceship.update();
+    if(document.getElementById("music").checked == true){
+        noMusic = true;
+    } else if(document.getElementById("music").checked == false){
+        noMusic = false;
+    }
 
-    missiles.map(function (_missile) {
-        _missile.update();
-    });
-    killMissile();
-
-
+    console.log(noMusic);
 
 }
 
@@ -365,7 +510,18 @@ document.onkeydown = function(key){
     }
 
     if(key.keyCode === 88){
-        spaceship.touch = true;
+        console.log(missiles);
+        console.log(spacemonsters);
+        console.log(stars);
+        console.log(animscores);
+    }
+
+    if(key.keyCode === 80){
+        if( play == true) {
+            play = false;
+        } else if (play == false){
+            play = true;
+        }
     }
 };
 
@@ -385,9 +541,7 @@ document.onkeyup = function(key){
         spaceship.shootSwitch = false;
     }
 
-    if(key.keyCode === 88){
-        spaceship.touch = false;
-    }
+
 };
 
 

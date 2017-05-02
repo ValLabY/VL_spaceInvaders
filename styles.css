@@ -1,16 +1,28 @@
+@font-face {
+    font-family: 'Pixeled';
+    src: url('font/Pixeled.ttf');
+}
+
 html{
     height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 body{
+    margin: 0;
+    padding: 0;
     background: black;
     height: 100%;
 }
 
 p{
+    padding: 15px 0 15px 0;
+    margin: 0;
+    font-family: Pixeled;
     text-align: center;
     color: white;
-    font-size: 4em;
+    font-size: 2em;
 }
 
 canvas{
@@ -18,4 +30,39 @@ canvas{
     text-align: center;
     margin: auto;
     border: 20px solid white;
+}
+
+.music{
+    background: url("images/music.svg") no-repeat center;
+    width: 50px;
+    height: 50px;
+    display: inline-block;
+}
+
+#music{
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+}
+
+
+#music:checked .music{
+    background: url("images/volume-mute2.svg") no-repeat center;
+}
+
+.sound{
+    background: url("images/volume-high.svg") no-repeat center;
+    width: 50px;
+    height: 50px;
+    display: inline-block;
+}
+
+#sound{
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#music:checked > .music{
+    background: repeat ;
 }
