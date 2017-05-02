@@ -63,6 +63,6 @@ canvas{
     height: 100%;
 }
 
-#music:checked > .music{
+#music:checked >.music{
     background: repeat ;
 }
